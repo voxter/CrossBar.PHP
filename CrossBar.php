@@ -15,7 +15,7 @@
         @author Chris Megalos
 	@date 2012-09-21
 	@note Class methods may change at anytime currently. 
-
+	
 	@class CrossBar
 	@brief Check
 **/
@@ -24,6 +24,7 @@ class CrossBar {
 	var $force_no_decode = false;  /**< force_no_decode disables json_decode from the send method. */
 	var $debug = false;	/**< debug enables debugging if true. */
 	var $is_authenticated = false; /**< is_authenticated boolean flag that is changed upon authentication. */
+
 	var $usermd5;	/**< usermd5 md5 of "user:password" */
 	var $host;	/**< ipv4 address or hostname */
 	
@@ -51,7 +52,7 @@ class CrossBar {
 
 	
 	**/
-	function CrossBar( $options ) {
+	function __construct( $options ) {
 
 		$this->force_no_decode = false; 
 		$this->debug = false;	
@@ -66,24 +67,14 @@ class CrossBar {
 		$auth = array();
 
 		if( !isset($this->xauth) && !isset($this->auth_account_id) ) {
-
-			if( !isset($this->usermd5) && isset($this->username) && isset($this->password) ) {
-				$this->usermd5 = md5($this->username.":".$this->password);
-			}
-
-
-			if( isset($this->account_name) && isset($this->usermd5) ) {
-				
+			if( isset($this->usermd5) ) {
 				$login_type = "md5";
-				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->account_name.'", "credentials": "'.$this->usermd5.'" }}');
-			} else if( isset($this->usermd5) ) {
-
-				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
-			} else if( isset($this->api_key) ) {
+				//$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
+				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
+			} else {
 				$login_type = "api_key";
 				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
 			}
-		
 			$this->auth = $auth;
 			if( $auth['status'] == 'success' ) {
 				$this->is_authenticated = true;	
@@ -112,6 +103,7 @@ class CrossBar {
 			echo $logthis."\n";
 		} else {
 			file_put_contents("/var/log/xbar.log",date("Y-m-d H:i:s")." - ".$logthis."\n",FILE_APPEND);
+			//syslog(LOG_NOTICE,"CrossBar.PHP: ".$logthis);
 		}
 	}
 
@@ -215,6 +207,45 @@ class CrossBar {
 
 
 
+	function get_account_id_by_did( $did, $realm_id = null ) {
+
+		$child_nums = array();
+		$current_nums = array();
+
+		static $account_id = null;
+
+
+		if( $realm_id == null ) $realm_id = $this->auth_account_id;
+
+		$check_response = $this->send("GET","/v1/accounts/{$realm_id}/phone_numbers/");
+		foreach( $check_response['data'] as $number => $data ) {
+
+			if( $number == $did ) {
+				$account_id = $realm_id;
+				return($realm_id);
+			}
+		}
+
+		$children = $this->get_children($realm_id);
+
+		foreach( $children as $child ) { 
+			$account_id = $this->get_account_id_by_did( $did, $child['id'] );
+			if( $account_id != null ) return($account_id);
+		}
+
+		return( $account_id );
+
+
+	}
+
+
+
+
+
+
+
+
+
 	function create_webhook( $name, $url, $bind_event = 'authz', $retries = 2, $account_id = null ) {
 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -311,8 +342,10 @@ class CrossBar {
 			//$realms[$child['id']] = $child['realm'];
 			$realms[$child['realm']] = $child['id'];
 		}
-		$crealm = $this->get_account($this->auth_account_id);
-		$realms[$crealm['realm']] = $this->auth_account_id;
+                $crealm = $this->get_account($this->auth_account_id);
+                $realms[$crealm['realm']] = $this->auth_account_id;
+
+		//$realms[$this->realm] = $this->auth_account_id;
 		return($realms);
 	}
 
@@ -417,11 +450,8 @@ class CrossBar {
 	}
 	
 
-
-
-
-	function get_account_id_by_realm( $realm ) { 
-		$realms = $this->get_accounts();
+	function get_account_id_by_realm( $realm, $account_id = null ) { 
+		$realms = $this->get_accounts($account_id);
 		return( $realms[$realm] );
 	}
 
