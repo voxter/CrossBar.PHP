@@ -1,13 +1,68 @@
 <?php
+/**
+	@mainpage CrossBar.PHP
+	@brief PHP interface with Kazoo's JSON API. This will allow you to send and recieve data from kazoo.
+	\n
+	\n
+	@b Classes:
+	- @ref CrossBar
+
+	@b Objects @b Supported:
+	- Accounts
+	- Users
 
 
-
+        @author Chris Megalos
+	@date 2012-09-21
+	@note Class methods may change at anytime currently. 
+	
+	@class CrossBar
+	@brief Check
+**/
 class CrossBar {
 
+	var $force_no_decode = false;  /**< force_no_decode disables json_decode from the send method. */
+	var $debug = false;	/**< debug enables debugging if true. */
+	var $is_authenticated = false; /**< is_authenticated boolean flag that is changed upon authentication. */
+	var $usermd5;	/**< usermd5 md5 of "user:password" */
+	var $host;	/**< ipv4 address or hostname */
+	
+
+
+
+	/** 
+
+	@brief Constructor, if you pass xauth it will use that as the auth token rather than attempting to get a new one.
+
+	@param array $options 
+	
+	@return Newly created object.
+	
+
+	@code
+	$XBOPTS['usermd5'] = md5("user:password");
+        $XBOPTS['realm'] = 'example.voxter.ca';
+        $XBOPTS['host'] = "127.0.0.1";
+        $XBOPTS['port'] = 8000;
+	$XBOPTS['debug'] = false;
+	$XBOPTS['force_no_decode'] = false; 
+	$XBOPTS['is_authenticated'] = false; 
+        $XBAR = new CrossBar($XBOPTS);
+	@endcode
+
+
+	
+	**/
 	function CrossBar( $options ) {
-		$this->force_no_decode = false;	
+
+		$this->force_no_decode = false; 
 		$this->debug = false;	
 		$this->is_authenticated = false;	
+
+		
+
+
+
 		foreach($options as $key => $value) $this->$key = $value; 
 		$auth = array();
 
@@ -33,6 +88,13 @@ class CrossBar {
 		} 
 
 	}
+
+
+	/** 
+	@brief Writes a log line to /tmp/xbar.log (default) or if $debug is set then it's sent to stdout
+	@param $logthis is the string to log
+	@return null
+	**/
 	function log( $logthis ) {
 		if( $this->debug ) {
 			echo $logthis."\n";
@@ -41,9 +103,17 @@ class CrossBar {
 		}
 	}
 
-
+	/**
+	@brief accessor for $is_authenticated
+	@return bool (true|false)
+	**/
 	function is_authenticated() { return($this->is_authenticated); }
 
+	/**
+	@brief attempts to retrieve the version
+	@return string json data currently haven't had chance to test this feature
+	@todo test this feature
+	**/
 	function get_version() {
 
 		$tmp = $this->force_no_decode;
@@ -56,25 +126,40 @@ class CrossBar {
 
 
 
+	/**
+	@brief retrieves the connectivity 
+	@return string json data 
+	**/
 	function get_connectivity( $cid = null, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/{$account_id}/connectivity/$cid");
 		return($response);
 	}
-	/*
-	function del_connectivity( $connectivity_id,  $account_id = null) {
-		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("DELETE","/v1/accounts/$account_id/connectivity/");
-		return($response);
-	}
-	*/
 
+	/**
+	@brief deletes the connectivity 
+	@return string json data 
+	**/
+        function del_connectivity( $cid,  $account_id = null) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("DELETE","/v1/accounts/$account_id/connectivity/$cid");
+                return($response);
+        }
+
+	/**
+	@brief updates the connectivity
+	@return string json data 
+	**/
 	function put_connectivity($data,  $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("PUT","/v1/accounts/{$account_id}/connectivity/{$cid}", json_encode(array('data'=>$data)));
 		return($response);
 	}
 	
+	/**
+	@brief create new connectivity (attach a pbx)
+	@return string json data 
+	**/
 	function post_connectivity( $data, $cid, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/connectivity/{$cid}", json_encode(array('data'=>$data)));
@@ -337,22 +422,21 @@ class CrossBar {
 	function get_all_info( $account_id = null ) {
 
 		if( $account_id == null ) $account_id = $this->use_account_id;
-		$users = $this->get_users($account_id);
+		$temp_users = $this->get_users($account_id);
 		$temp_devices = $this->get_devices($account_id);
 		$devices_status = $this->get_devices_status($account_id);
+		$vmboxes = $this->get_vmboxes($account_id);
+		ob_start();
+		print_r($vmboxes);
+		$this->log(ob_get_clean());
+	
+		$users = array();
 
-
-		foreach( $devices as $device ) {
-			
-
+		foreach( $temp_users as $user ) { $users[$user['id']] = $user; }
+		foreach( $temp_devices as $device ) {
+			if( isset($devices_status[$device['id']]) ) $device['online'] = true;
+			$device['user'] = $users[$device['owner_id']];
 		}
-		
-		foreach( $users as $user ) {
-
-			
-			
-		}
-
 	}
 
 
@@ -469,6 +553,44 @@ class CrossBar {
 
 	function get_subs( $account_id = null ) {return( $this->get_available_subscriptions($account_id)); } 
 
+
+
+
+
+        function get_conferences( $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences");
+		return($response['data']);
+			
+        }
+
+        function find_conferences( $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
+		return($response['data']);
+        }
+
+
+
+
+	
+        function get_conference( $conference_id = null, $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
+		return($response['data']);
+        }
+
+        function put_conference( $data, $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences");
+        }
+
+
+
+        function del_conference( $conference_id = null, $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
+        }
 
 
 
@@ -603,6 +725,32 @@ class CrossBar {
 	}
 
 
+	function get_conference_map() {
+		$cf_nums = $this->get_callflows();
+		$map = array();
+		foreach( $cf_nums as $cf_num ) {
+                        $cf = $this->get_callflow($cf_num['id']);
+                        //if( $cf['numbers'][0] == "2222" ||  $cf['numbers'][0] == "3333" ) print_r($cf);
+			//print_r($cf);
+			if( $cf['flow']['module'] == 'conference' ) {
+				foreach( $cf['numbers'] as $number ) {
+					if( isset( $cf['flow']['data']['id'] ) ) {
+						$map['direct'][$cf['flow']['data']['id']][] = $number;
+						//$map[$cf['flow']['data']['id']]['direct'][] = $number;
+					} else {
+						//$map['service'][$cf['id']][] = $number;
+						$map['service'][] = $number;
+						//$map[$cf['id']]['service'][] = $number;
+					}
+				}
+
+			}	
+                
+                }
+		return($map);
+
+
+	}
 
 
 
