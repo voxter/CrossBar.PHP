@@ -61,6 +61,7 @@ class CrossBar {
 
 		
 
+		$login_type = "";
 
 
 		foreach($options as $key => $value) $this->$key = $value; 
@@ -68,8 +69,11 @@ class CrossBar {
 
 		if( !isset($this->xauth) && !isset($this->auth_account_id) ) {
 			if( isset($this->usermd5) ) {
-				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
+				$login_type = "md5";
+				//$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
+				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
 			} else {
+				$login_type = "api_key";
 				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
 			}
 			$this->auth = $auth;
@@ -83,7 +87,7 @@ class CrossBar {
 				
 			} else {
 				
-				$this->log("API Key failure");
+				$this->log("$login_type: failure");
 			}
 		} 
 
