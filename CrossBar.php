@@ -68,14 +68,35 @@ class CrossBar {
 		$auth = array();
 
 		if( !isset($this->xauth) && !isset($this->auth_account_id) ) {
+
+
+
+			if( !isset($this->usermd5) && isset($this->username) && isset($this->password) ) {
+				$this->usermd5 = md5($this->username.":".$this->password);
+			}
+
+
+			if( isset($this->account_name) && isset($this->usermd5) ) {
+				
+				$login_type = "md5";
+				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->account_name.'", "credentials": "'.$this->usermd5.'" }}');
+			} else if( isset($this->usermd5) ) {
+
+				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
+			} else if( isset($this->api_key) ) {
+				$login_type = "api_key";
+				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
+			}
+		
+			/*
 			if( isset($this->usermd5) ) {
 				$login_type = "md5";
-				//$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
 				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
 			} else {
 				$login_type = "api_key";
 				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
 			}
+			*/
 			$this->auth = $auth;
 			if( $auth['status'] == 'success' ) {
 				$this->is_authenticated = true;	
@@ -103,7 +124,7 @@ class CrossBar {
 		if( $this->debug ) {
 			echo $logthis."\n";
 		} else {
-			file_put_contents("/tmp/xbar.log",date("Y-m-d H:i:s")." - ".$logthis."\n",FILE_APPEND);
+			file_put_contents("/var/log/xbar.log",date("Y-m-d H:i:s")." - ".$logthis."\n",FILE_APPEND);
 		}
 	}
 
@@ -272,7 +293,8 @@ class CrossBar {
 			//$realms[$child['id']] = $child['realm'];
 			$realms[$child['realm']] = $child['id'];
 		}
-		$realms[$this->realm] = $this->auth_account_id;
+		$crealm = $this->get_account($this->auth_account_id);
+		$realms[$crealm['realm']] = $this->auth_account_id;
 		return($realms);
 	}
 
