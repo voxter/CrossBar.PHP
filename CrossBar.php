@@ -15,7 +15,7 @@
         @author Chris Megalos
 	@date 2012-09-21
 	@note Class methods may change at anytime currently. 
-	
+
 	@class CrossBar
 	@brief Check
 **/
@@ -27,8 +27,6 @@ class CrossBar {
 	var $usermd5;	/**< usermd5 md5 of "user:password" */
 	var $host;	/**< ipv4 address or hostname */
 	
-
-
 
 	/** 
 
@@ -69,8 +67,6 @@ class CrossBar {
 
 		if( !isset($this->xauth) && !isset($this->auth_account_id) ) {
 
-
-
 			if( !isset($this->usermd5) && isset($this->username) && isset($this->password) ) {
 				$this->usermd5 = md5($this->username.":".$this->password);
 			}
@@ -88,15 +84,6 @@ class CrossBar {
 				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
 			}
 		
-			/*
-			if( isset($this->usermd5) ) {
-				$login_type = "md5";
-				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
-			} else {
-				$login_type = "api_key";
-				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
-			}
-			*/
 			$this->auth = $auth;
 			if( $auth['status'] == 'success' ) {
 				$this->is_authenticated = true;	
@@ -128,11 +115,13 @@ class CrossBar {
 		}
 	}
 
+
 	/**
 	@brief accessor for $is_authenticated
 	@return bool (true|false)
 	**/
 	function is_authenticated() { return($this->is_authenticated); }
+
 
 	/**
 	@brief attempts to retrieve the version
@@ -150,7 +139,6 @@ class CrossBar {
 	}
 
 
-
 	/**
 	@brief retrieves the connectivity 
 	@return string json data 
@@ -161,6 +149,16 @@ class CrossBar {
 		return($response);
 	}
 
+	function get_pbxs( $account_id = null ) { 
+		$response = $this->get_connectivity(null, $account_id); 
+		return($response['data']); 
+	}
+	function get_pbx( $cid, $account_id = null ) { 
+		$response = $this->get_connectivity($cid, $account_id); 
+		return($response['data']); 
+	}
+
+
 	/**
 	@brief deletes the connectivity 
 	@return string json data 
@@ -170,6 +168,8 @@ class CrossBar {
                 $response = $this->send("DELETE","/v1/accounts/$account_id/connectivity/$cid");
                 return($response);
         }
+	function del_pbx( $cid, $account_id = null ) { $response = $this->del_connectivity($cid,$account_id); return($response['data']); }
+
 
 	/**
 	@brief updates the connectivity
@@ -180,7 +180,10 @@ class CrossBar {
 		$response = $this->send("PUT","/v1/accounts/{$account_id}/connectivity/{$cid}", json_encode(array('data'=>$data)));
 		return($response);
 	}
+
+	function put_pbx($data,  $account_id = null ) { $response = $this->put_connectivity($data,$account_id); return($response['data']); }
 	
+
 	/**
 	@brief create new connectivity (attach a pbx)
 	@return string json data 
@@ -190,6 +193,27 @@ class CrossBar {
 		$response = $this->send("POST","/v1/accounts/{$account_id}/connectivity/{$cid}", json_encode(array('data'=>$data)));
 		return($response);
 	}
+	function post_pbx($data,  $account_id = null ) { $response = $this->post_connectivity($data,$account_id); return($response['data']); }
+
+
+	function get_realm_numbers( $realm_id = null ) {
+
+		$child_nums = array();
+		$current_nums = array();
+
+		if( $realm_id == null ) $realm_id = $this->auth_account_id;
+
+		$check_response = $this->send("GET","/v1/accounts/{$realm_id}/phone_numbers/");
+		foreach( $check_response['data'] as $number => $data ) if( $number != 'id' ) $current_nums[$number] = $realm_id;
+		$children = $this->get_children($realm_id);
+		foreach( $children as $child ) $current_nums = array_merge( $current_nums, $this->get_realm_numbers($child['id']) );
+
+		return($current_nums);
+
+
+	}
+
+
 
 	function create_webhook( $name, $url, $bind_event = 'authz', $retries = 2, $account_id = null ) {
 
@@ -210,7 +234,6 @@ class CrossBar {
 	}
 
 
-
 	function delete_webhook( $hook_id, $account_id = null ) {
 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -219,12 +242,6 @@ class CrossBar {
 		return($response);
 
 	}
-
-
-
-
-
-
 
 
 	function use_account( $account_id, $cache = false ) { 
@@ -239,7 +256,6 @@ class CrossBar {
 		}
 
 	}
-
 
 
 	function get( $type, $id = null, $filters = array(), $account_id = null ) {
@@ -264,11 +280,13 @@ class CrossBar {
 
 	}
 
+
 	function post( $type, $id, $data, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/$type/$id", json_encode(array('data'=>$data)));
 		return($response);
 	}
+
 
 	function put( $type, $data, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -314,7 +332,6 @@ class CrossBar {
 	}
 
 
-
 	function get_callflows_by( $id, $type = 'device' ) {
 
 		$aout = array();
@@ -337,15 +354,12 @@ class CrossBar {
 	}
 
 
-
-
-
-
 	function get_device_by_username( $username, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->get('devices',null,array('username'=>$username),$account_id);	
 		return($response[0]);
 	}
+
 
 	function get_device_by_name( $name, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -353,17 +367,20 @@ class CrossBar {
 		return($response[0]);
 	}
 
+
 	function get_devices_by_owner( $owner_id, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->get('devices',null,array('owner_id'=>$owner_id),$account_id);	
 		return($response);
 	}
 
+
 	function get_device_by_owner( $owner_id, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->get('devices',null,array('owner_id'=>$owner_id),$account_id);	
 		return($response[0]);
 	}
+
 
 	function get_vmbox_by_ext( $extension,  $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -378,16 +395,12 @@ class CrossBar {
 	}
 	
 
-
-
 	function get_vmbox_by_owner( $owner_id,  $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->get('vmboxes',null,array('owner_id'=>$owner_id),$account_id);	
 		foreach( $response as $key => $data ) $response[$key] = array_merge($data, $this->get_vmbox($data['id'],$account_id));	
 		return($response);
 	}
-
-
 
 
 	function get_vmbox_by_name( $name,  $account_id = null ) { 
@@ -412,15 +425,18 @@ class CrossBar {
 		return( $realms[$realm] );
 	}
 
+
 	function get_user_by_name( $username, $account_id = null ) {
 		$response = $this->get('users',null,array('username'=>$username),$account_id);	
 		return($response[0]);
 	}
 
+
 	function get_user_id( $username ) {
 		$user = $this->get_user($username);
 		if( isset($user['id']) ) return($user['id']); return false;
 	}
+
 
 	function get_children($account_id = null) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -428,16 +444,19 @@ class CrossBar {
 		return($response['data']);
 	}
 
+
 	function get_siblings() { 
 		$response = $this->send("GET","/v1/accounts/{$this->use_account_id}/siblings");
 		return($response['data']);
 	}
+
 
 	function get_descendants() { 
 		$response = $this->send("GET","/v1/accounts/{$this->use_account_id}/descendants");
 		return($response['data']);
 	}
 	
+
 	function set_parent( $account_id, $new_parent_id ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/parent","parent=$new_parent_id");
@@ -475,7 +494,6 @@ class CrossBar {
 	}
 
 
-
 	function get_devices( $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/{$account_id}/devices");
@@ -490,11 +508,13 @@ class CrossBar {
 		return($response['data']);
 	}
 
+
 	function get_messages( $box_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/{$account_id}/vmboxes/$box_id/messages");
 		return($response['data']);
 	}
+
 
 	function get_message( $message_id, $box_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -503,13 +523,11 @@ class CrossBar {
 	}
 
 
-
 	function del_message( $message_id, $box_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("DELETE","/v1/accounts/{$account_id}/vmboxes/$box_id/messages/$message_id");
 		return($response['data']);
 	}
-
 
 
 	function get_message_raw( $message_id, $box_id, $account_id = null ) { 
@@ -531,6 +549,7 @@ class CrossBar {
 
 	}
 	
+
 	function get_media_raw( $media_id = null, $account_id = null ) {
 
 		$tmp = $this->force_no_decode;
@@ -543,7 +562,6 @@ class CrossBar {
 		return($response);
 
 	}
-
 
 	
 	function del_media( $media_id, $account_id = null ) {
@@ -560,15 +578,12 @@ class CrossBar {
 	}
 
 
-
-
-
-
 	function get_resources( $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/{$account_id}/local_resources");
 		return($response['data']);
 	}
+
 
 	function get_available_subscriptions( $account_id = null ) {
 
@@ -577,11 +592,8 @@ class CrossBar {
 		return($response['data']);
 	}
 
+
 	function get_subs( $account_id = null ) {return( $this->get_available_subscriptions($account_id)); } 
-
-
-
-
 
         function get_conferences( $account_id = null ) {
                 if( $account_id == null ) $account_id = $this->use_account_id;
@@ -590,14 +602,12 @@ class CrossBar {
 			
         }
 
+
         function find_conferences( $account_id = null ) {
                 if( $account_id == null ) $account_id = $this->use_account_id;
                 $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
 		return($response['data']);
         }
-
-
-
 
 	
         function get_conference( $conference_id = null, $account_id = null ) {
@@ -606,11 +616,11 @@ class CrossBar {
 		return($response['data']);
         }
 
+
         function put_conference( $data, $account_id = null ) {
                 if( $account_id == null ) $account_id = $this->use_account_id;
                 $response = $this->send("GET","/v1/accounts/{$account_id}/conferences");
         }
-
 
 
         function del_conference( $conference_id = null, $account_id = null ) {
@@ -619,26 +629,12 @@ class CrossBar {
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	function get_device( $device_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/{$account_id}/devices/$device_id");
 		return($response['data']);
 	}
+
 
 	function del_device( $device_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -646,20 +642,19 @@ class CrossBar {
 		return($response);
 	}
 
+
 	function put_device( $data, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("PUT","/v1/accounts/{$account_id}/devices/",json_encode(array('data'=>$data)));
 		return($response);
 	}
 
+
 	function post_device( $data, $device_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/devices/$device_id", json_encode(array('data'=>$data)));
 		return($response);
 	}
-
-
-
 
 
 	function get_vmbox( $box_id, $account_id = null ) { 
@@ -681,23 +676,12 @@ class CrossBar {
 		return($response);
 	}
 
+
 	function post_vmbox( $data, $box_id, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/vmboxes/$box_id", json_encode(array('data'=>$data)));
 		return($response);
 	}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	function get_user( $user_id, $account_id = null ) {
@@ -707,12 +691,12 @@ class CrossBar {
 	}
 
 
-
 	function del_user( $user_id, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("DELETE","/v1/accounts/{$account_id}/users/$user_id");
 		return($response);
 	}
+
 
 	function put_user( $data, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -720,11 +704,13 @@ class CrossBar {
 		return($response);
 	}
 
+
 	function post_user( $data, $user_id, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/users/$user_id", json_encode(array('data'=>$data),JSON_FORCE_OBJECT));
 		return($response);
 	}
+
 
 	function get_account( $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -738,12 +724,14 @@ class CrossBar {
 		return($response);
 	}
 
+
 	function put_account( $data, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("PUT","/v1/accounts/{$account_id}", json_encode(array('data'=>$data)));
 		return($response);
 	}
 	
+
 	function post_account( $data, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}", json_encode(array('data'=>$data)));
@@ -779,7 +767,6 @@ class CrossBar {
 	}
 
 
-
 	function get_callflows( $account_id = null) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/$account_id/callflows");
@@ -792,7 +779,6 @@ class CrossBar {
 		$response = $this->send("GET","/v1/accounts/$account_id/callflows/$call_flow_id");
 		return($response['data']);
 	}
-
 
 
 	function put_callflow( $data, $account_id = null) {
@@ -809,10 +795,6 @@ class CrossBar {
 	}
 
 
-
-
-
-
 	/*
 	function profile_send( $method, $url, $post_data = NULL ) {
 		$mstart = microtime(true);
@@ -821,12 +803,6 @@ class CrossBar {
 		return( array( 'data' => $data, 'µTime' => ( $mend - $mstart )));	
 	}
 	*/
-	
-
-
-
-
-
 
 	function post_media( $data, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -882,7 +858,7 @@ class CrossBar {
 		$mend = microtime(true);
 
 		//if( $this->profile ) printf("{$bldblu}URL:{$bldylw}$url {$bldblu}µT:{$bldylw}".( $mend - $mstart ).$txtrst."\n");
-		$this->log( "{$bldred}$url{$txtrst} {$bldylw}µT:".( $mend - $mstart )."{$txtrst}");
+		$this->log( "{$bldred}{$this->host}:{$this->port}$url{$txtrst} {$bldylw}µT:".( $mend - $mstart )."{$txtrst}");
 
 		list($this->headers, $this->body) = explode("\r\n\r\n", $response);
 
@@ -921,9 +897,12 @@ class CrossBar {
 		}
 
 		//same thing here
-		if( stristr($this->headers,"401 Unauthorized") || stristr($this->headers,"400 Not Found") || stristr($this->headers,"500 Internal Server") ) { 
+		if( stristr($this->headers,"401 Unauthorized") || stristr($this->headers,"400 Not Found") || stristr($this->headers,"500 Internal Server") || stristr($this->headers,"400 Bad Request") ) { 
 				//$this->log("{$bldpur}Found 401{$txtrst}");
-				return( array("data" => array('status' => 'failure')) );
+				$temp =  json_decode($this->body,true);
+				
+				//return( array("data" => array('status' => 'failure', 'message' => $temp['message'])) );
+				return( array('status' => 'failure', 'message' => $temp['message']) );
 				//return false;
 		}
 
