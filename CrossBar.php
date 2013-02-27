@@ -141,10 +141,12 @@ class CrossBar {
 		return($response);
 	}
 
+
 	function get_pbxs( $account_id = null ) { 
 		$response = $this->get_connectivity(null, $account_id); 
 		return($response['data']); 
 	}
+
 	function get_pbx( $cid, $account_id = null ) { 
 		$response = $this->get_connectivity($cid, $account_id); 
 		return($response['data']); 
@@ -206,7 +208,6 @@ class CrossBar {
 	}
 
 
-
 	function get_account_id_by_did( $did, $realm_id = null ) {
 
 		$child_nums = array();
@@ -237,13 +238,6 @@ class CrossBar {
 
 
 	}
-
-
-
-
-
-
-
 
 
 	function create_webhook( $name, $url, $bind_event = 'authz', $retries = 2, $account_id = null ) {
@@ -420,6 +414,7 @@ class CrossBar {
 		$response = $this->get('vmboxes',null,array('mailbox'=>$extension),$account_id);	
 		return($response[0]);
 	}
+
 
 	function get_vmbox_by_number( $number,  $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -797,6 +792,139 @@ class CrossBar {
 	}
 
 
+
+
+
+	function get_directories( $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/directories");
+		return($response['data']);
+	}
+
+
+	function get_directory( $directory_id, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/directories/$directory_id");
+		return($response['data']);
+	}
+
+
+	function put_directory( $data, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("PUT","/v1/accounts/{$account_id}/directories", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+	function post_directory( $data, $directory_id, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("POST","/v1/accounts/{$account_id}/directories/{$directory_id}", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+
+
+
+
+	function get_menus( $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/menus");
+		return($response['data']);
+	}
+
+
+	function get_menu( $menus_id, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/menus/$menus_id");
+		return($response['data']);
+	}
+
+
+	function put_menus( $data, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("PUT","/v1/accounts/{$account_id}/menus", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+	function post_menus( $data, $menus_id, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("POST","/v1/accounts/{$account_id}/menus/{$menus_id}", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+
+
+
+
+	function get_temporal_rules( $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/temporal_rules");
+		return($response['data']);
+	}
+
+
+	function get_temporal_rule_by_name( $name, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/temporal_rules/");
+		foreach( $response['data'] as $temporal_rule ) if( $temporal_rule['name'] == $name ) return($temporal_rule);
+		return(false);
+	}
+
+
+
+	function get_temporal_rule( $temporal_rule_id, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/$account_id/temporal_rules/$temporal_rule_id");
+		return($response['data']);
+	}
+
+
+	function put_temporal_rules( $data, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("PUT","/v1/accounts/{$account_id}/temporal_rules", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+	function post_temporal_rules( $data, $temporal_rule_id, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("POST","/v1/accounts/{$account_id}/temporal_rules/{$temporal_rule_id}", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+	function del_temporal_rules( $temporal_rule_id, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("DELETE","/v1/accounts/$account_id/temporal_rules/$temporal_rule_id");
+		return($response);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	function get_callflows( $account_id = null) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("GET","/v1/accounts/$account_id/callflows");
@@ -814,6 +942,12 @@ class CrossBar {
 	function put_callflow( $data, $account_id = null) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("PUT","/v1/accounts/{$account_id}/callflows", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+	function post_callflow( $data, $cf_id, $account_id = null) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("POST","/v1/accounts/{$account_id}/callflows/{$cf_id}", json_encode(array('data'=>$data)));
 		return($response);
 	}
 
