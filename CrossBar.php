@@ -282,8 +282,33 @@ class CrossBar {
 
 	}
 
+	function get_object( $type, $id = null, $filters = array(), $account_id = null ) {
+
+		if( $account_id == null ) $account_id = $this->use_account_id;
+
+		$filter = '';
+
+		if( count($filters) ) {
+			foreach( $filters as $key => $val ) $filter .= "filter_$key=$val&";
+			if( strlen($filter) ) $filter = '?'.substr($filter,0,-1);
+		} else if( strlen($id) ) {
+			$filter = "/$id";
+		}
+
+		//$this->log("GET /v1/accounts/{$account_id}/$type$filter");
+		$response = $this->send_object("GET","/v1/accounts/{$account_id}/$type$filter");
+
+		//return($response['data']);
+		return($response->data);
+
+
+
+	}
+
+
 
 	function get( $type, $id = null, $filters = array(), $account_id = null ) {
+		$this->log(__CLASS__."->".__METHOD__." is DEPRECATED, please replace with ".__CLASS__."->get_object");
 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 
@@ -388,9 +413,28 @@ class CrossBar {
 	}
 
 
+
 	function get_device_by_name( $name, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->get('devices',null,array('name'=>$name),$account_id);	
+		return($response[0]);
+	}
+
+	function get_menu_by_name( $name, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->get('menus',null,array('name'=>$name),$account_id);	
+		return($response[0]);
+	}
+
+	function get_conference_by_name( $name, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->get('conferences',null,array('name'=>$name),$account_id);	
+		return($response[0]);
+	}
+
+	function get_directory_by_name( $name, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->get('directories',null,array('name'=>$name),$account_id);	
 		return($response[0]);
 	}
 
@@ -620,6 +664,47 @@ class CrossBar {
 
 	function get_subs( $account_id = null ) {return( $this->get_available_subscriptions($account_id)); } 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+	function get_conference_map() {
+		$cf_nums = $this->get_callflows();
+		$map = array();
+		foreach( $cf_nums as $cf_num ) {
+                        $cf = $this->get_callflow($cf_num['id']);
+                        //if( $cf['numbers'][0] == "2222" ||  $cf['numbers'][0] == "3333" ) print_r($cf);
+			//print_r($cf);
+			if( $cf['flow']['module'] == 'conference' ) {
+				foreach( $cf['numbers'] as $number ) {
+					if( isset( $cf['flow']['data']['id'] ) ) {
+						$map['direct'][$cf['flow']['data']['id']][] = $number;
+						//$map[$cf['flow']['data']['id']]['direct'][] = $number;
+					} else {
+						//$map['service'][$cf['id']][] = $number;
+						$map['service'][] = $number;
+						//$map[$cf['id']]['service'][] = $number;
+					}
+				}
+
+			}	
+                
+                }
+		return($map);
+
+
+	}
+
+
         function get_conferences( $account_id = null ) {
                 if( $account_id == null ) $account_id = $this->use_account_id;
                 $response = $this->send("GET","/v1/accounts/{$account_id}/conferences");
@@ -642,16 +727,81 @@ class CrossBar {
         }
 
 
-        function put_conference( $data, $account_id = null ) {
-                if( $account_id == null ) $account_id = $this->use_account_id;
-                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences");
-        }
+	function put_conference( $data, $account_id = null ) { 
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("PUT","/v1/accounts/{$account_id}/conferences/",json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+
+	function post_conference( $data, $conference_id, $account_id = null ) { 
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("POST","/v1/accounts/{$account_id}/conferences/$conference_id", json_encode(array('data'=>$data)));
+		return($response);
+	}
 
 
         function del_conference( $conference_id = null, $account_id = null ) {
                 if( $account_id == null ) $account_id = $this->use_account_id;
-                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
+                $response = $this->send("DELETE","/v1/accounts/{$account_id}/conferences/{$conference_id}");
+		return($response);
         }
+
+
+
+
+
+
+
+
+
+
+        function get_directories( $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/directories");
+		return($response['data']);
+			
+        }
+
+	
+        function get_directory( $directory_id = null, $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/directories/{$directory_id}");
+		return($response['data']);
+        }
+
+
+	function put_directory( $data, $account_id = null ) { 
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("PUT","/v1/accounts/{$account_id}/directories/",json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+
+	function post_directory( $data, $directory_id, $account_id = null ) { 
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("POST","/v1/accounts/{$account_id}/directories/$directory_id", json_encode(array('data'=>$data)));
+		return($response);
+	}
+
+
+        function del_directory( $directory_id = null, $account_id = null ) {
+                if( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("DELETE","/v1/accounts/{$account_id}/directories/{$directory_id}");
+		return($response);
+        }
+
+
+	
+
+
+
+
+
+
+
+
+
 
 
 	function get_device( $device_id, $account_id = null ) { 
@@ -764,62 +914,6 @@ class CrossBar {
 	}
 
 
-	function get_conference_map() {
-		$cf_nums = $this->get_callflows();
-		$map = array();
-		foreach( $cf_nums as $cf_num ) {
-                        $cf = $this->get_callflow($cf_num['id']);
-                        //if( $cf['numbers'][0] == "2222" ||  $cf['numbers'][0] == "3333" ) print_r($cf);
-			//print_r($cf);
-			if( $cf['flow']['module'] == 'conference' ) {
-				foreach( $cf['numbers'] as $number ) {
-					if( isset( $cf['flow']['data']['id'] ) ) {
-						$map['direct'][$cf['flow']['data']['id']][] = $number;
-						//$map[$cf['flow']['data']['id']]['direct'][] = $number;
-					} else {
-						//$map['service'][$cf['id']][] = $number;
-						$map['service'][] = $number;
-						//$map[$cf['id']]['service'][] = $number;
-					}
-				}
-
-			}	
-                
-                }
-		return($map);
-
-
-	}
-
-
-
-
-
-	function get_directories( $account_id = null) {
-		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("GET","/v1/accounts/$account_id/directories");
-		return($response['data']);
-	}
-
-
-	function get_directory( $directory_id, $account_id = null ) {
-		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("GET","/v1/accounts/$account_id/directories/$directory_id");
-		return($response['data']);
-	}
-
-
-	function put_directory( $data, $account_id = null) {
-		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("PUT","/v1/accounts/{$account_id}/directories", json_encode(array('data'=>$data)));
-		return($response);
-	}
-
-	function post_directory( $data, $directory_id, $account_id = null) {
-		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("POST","/v1/accounts/{$account_id}/directories/{$directory_id}", json_encode(array('data'=>$data)));
-		return($response);
-	}
 
 
 
@@ -839,17 +933,27 @@ class CrossBar {
 	}
 
 
-	function put_menus( $data, $account_id = null) {
+	function put_menu( $data, $account_id = null) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("PUT","/v1/accounts/{$account_id}/menus", json_encode(array('data'=>$data)));
 		return($response);
 	}
 
-	function post_menus( $data, $menus_id, $account_id = null) {
+	function post_menu( $data, $menus_id, $account_id = null) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
 		$response = $this->send("POST","/v1/accounts/{$account_id}/menus/{$menus_id}", json_encode(array('data'=>$data)));
 		return($response);
 	}
+
+	function del_menu( $menu_id, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("DELETE","/v1/accounts/$account_id/menus/$menu_id");
+		return($response);
+	}
+
+
+
+
 
 
 
@@ -981,6 +1085,11 @@ class CrossBar {
 	}
 
 
+	function send_object( $method, $url, $post_data = NULL, $type = 'application/json' ) {
+		$this->send($method,$url,$post_data,$type);
+		return( json_decode($this->body) );	
+
+	}
 	
 	function send( $method, $url, $post_data = NULL, $type = 'application/json' ) {
 
@@ -1022,7 +1131,7 @@ class CrossBar {
 		$mend = microtime(true);
 
 		//if( $this->profile ) printf("{$bldblu}URL:{$bldylw}$url {$bldblu}µT:{$bldylw}".( $mend - $mstart ).$txtrst."\n");
-		$this->log( "{$bldred}{$this->host}:{$this->port}$url{$txtrst} {$bldylw}µT:".( $mend - $mstart )."{$txtrst}");
+		$this->log( "{$bldred}{$method} {$this->host}:{$this->port}$url{$txtrst} {$bldylw}µT:".( $mend - $mstart )."{$txtrst}");
 
 		list($this->headers, $this->body) = explode("\r\n\r\n", $response);
 
