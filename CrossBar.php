@@ -1096,7 +1096,7 @@ class CrossBar {
 
 	}
 	
-	function send( $method, $url, $post_data = NULL, $type = 'application/json' ) {
+	function send( $method, $url, $post_data = NULL, $type = 'application/json', $accept_type = "application/json, application/octet-stream, audio/*, */*" ) {
 
 		$bldred=chr(0x1B).'[1;31m'; $bldgrn=chr(0x1B).'[1;32m'; $bldylw=chr(0x1B).'[1;33m'; $bldblu=chr(0x1B).'[1;34m'; $bldpur=chr(0x1B).'[1;35m'; $bldcyn=chr(0x1B).'[1;36m'; $bldwht=chr(0x1B).'[1;37m'; $txtrst=chr(0x1B).'[0m'; 
 
@@ -1118,8 +1118,9 @@ class CrossBar {
 		if (isset($this->user)) $request .= "Authorization: Basic ".base64_encode("$this->user:$this->pass")."\r\n";
 
 
-		$request .= "Content-Type: $type\r\n";
-		$request .= "Accept: application/json, application/octet-stream, audio/*\r\n";
+		if( $type != null ) $request .= "Content-Type: $type\r\n";
+		//$request .= "Accept: application/json, application/octet-stream, audio/*\r\n";
+		$request .= "Accept: $accept_type\r\n";
 		if( isset($this->xauth) ) $request .= "X-Auth-Token: {$this->xauth}\r\n";
 
 		if($post_data) {
@@ -1132,7 +1133,7 @@ class CrossBar {
 
 
 		fwrite($this->socket_stream, $request);
-
+		//fflush($this->socket_stream);
 
 
 		$response = "";
