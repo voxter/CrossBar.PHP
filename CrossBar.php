@@ -27,6 +27,7 @@ class CrossBar {
 
 	var $usermd5;	/**< usermd5 md5 of "user:password" */
 	var $host;	/**< ipv4 address or hostname */
+        var $logfile = "/var/log/xbar.log"; /**< Log file */
 	
 
 	/** 
@@ -58,7 +59,7 @@ class CrossBar {
 		$this->debug = false;	
 		$this->is_authenticated = false;	
 		$this->socket_stream = null;
-		
+		$this->logfile;
 
 		$login_type = "";
 
@@ -107,7 +108,7 @@ class CrossBar {
 		if( $this->debug ) {
 			echo $logthis."\n";
 		} else {
-			file_put_contents("/var/log/xbar.log",date("Y-m-d H:i:s")." - ".$logthis."\n",FILE_APPEND);
+			file_put_contents($this->logfile,date("Y-m-d H:i:s")." - ".$logthis."\n",FILE_APPEND);
 			//syslog(LOG_NOTICE,"CrossBar.PHP: ".$logthis);
 		}
 	}
@@ -1087,6 +1088,113 @@ class CrossBar {
 		}
 		return($response);
 
+	}
+
+
+	/** 
+	@brief Gets the details on all the cdrs
+	@param $account_id The account that the cdr belongs too
+	@return $response The response is an array that is just passed through. 
+	**/
+	function get_cdrs( $filters = Array(), $account_id = null ) {
+
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		if( $filters == null ) $filters = Array();
+		$filter = '';
+
+                if( count($filters) ) {
+                        foreach( $filters as $key => $val ) $filter .= "$key=$val&";
+                        if( strlen($filter) ) $filter = '?'.substr($filter,0,-1);
+                } else if( strlen($id) ) {
+                        $filter = "/$id";
+                }
+
+		$response = $this->send("GET","/v1/accounts/{$account_id}/cdrs{$filter}", null, null, "*/*" );
+
+		return($response['data']);
+	}
+
+	/** 
+	@brief Accepts a URL to a PDF to then fax out
+	@param $data The data as defined at https://2600hz.atlassian.net/wiki/display/docs/Faxes+API
+	@param $account_id The account that is sending the fax
+	@return $response The response is an array that is just passed through. 
+	**/
+	function put_fax( $data, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+			$response = $this->send("PUT","/v1/accounts/{$account_id}/faxes",json_encode( array( 'data' => $data['data'] ) ) );
+		return($response);
+	}
+
+	/** 
+	@brief Gets the details on a specific fax
+	@param $fax_id The unique fax id as returned by the get_faxes func
+	@param $account_id The account that the fax belongs too
+	@return $response The response is an array that is just passed through. 
+	**/
+    function get_fax( $fax_id = null, $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+			$response = $this->send("GET","/v1/accounts/{$account_id}/faxes/{$fax_id}" );
+		return($response['data']);
+	}
+		
+	/** 
+	@brief Gets the details on all the faxes
+	@param $account_id The account that the fax belongs too
+	@return $response The response is an array that is just passed through. 
+	**/
+	function get_faxes( $account_id = null ) {
+		if( $account_id == null ) $account_id = $this->use_account_id;
+			$response = $this->send("GET","/v1/accounts/{$account_id}/faxes/outgoing" );
+		return($response['data']);
+	}
+        
+	/** 
+	@brief Gets the actual fax file that was sent
+	@param $fax_id The unique fax id as returned by the get_faxes func
+	@param $account_id The account that the fax belongs too
+	@return $response The response is an array that is just passed through. 
+	**/
+	function get_fax_file( $fax_id = null, $account_id = null ) {
+		// Doesn't exist in the 2600 api yet but should.
+		$bldred=chr(0x1B).'[1;31m';
+		$this->log("{$bldred}!!!!: get_fax_file not yet implemented.");
+				
+		return( array('status' => 'failure', 'message' => 'del_fax not yet implemented.') );
+		
+		/*
+		// From the get_media_raw call above and tweaked a bit.
+		$tmp = $this->force_no_decode;
+		$this->force_no_decode = true;
+
+		if( $account_id == null ) $account_id = $this->use_account_id;
+			$response = $this->send("GET","/v1/accounts/{$account_id}/faxes/{$fax_id}/file" );
+
+		$this->force_no_decode = $tmp;
+		return($response);
+		
+		*/
+	}
+    
+	/** 
+	@brief Deletes a fax from the queue?  Do we really need this?
+	@param $fax_id The unique fax id as returned by the get_faxes func
+	@param $account_id The account that the fax belongs too
+	@return $response The response is an array that is just passed through. 
+	**/
+	function del_fax( $fax_id, $account_id = null ) {
+		// Doesn't exist in the 2600 api yet but should.
+		$bldred=chr(0x1B).'[1;31m';
+		$this->log("{$bldred}!!!!: del_fax not yet implemented.");
+		
+		return( array('status' => 'failure', 'message' => 'del_fax not yet implemented.') );
+
+		/*
+		// From the del_media call above and tweaked a bit.
+		if( $account_id == null ) $account_id = $this->use_account_id;
+			$response = $this->send("DELETE","/v1/accounts/{$account_id}/faxes/{$fax_id}" );
+		return($response);
+		*/
 	}
 
 
