@@ -1128,6 +1128,8 @@ class CrossBar {
 
 		while(!feof($s)) { $response .= fgets($s); }
 
+		fclose($s); //Egg meet face :S
+
 		$mend = microtime(true);
 
 		//if( $this->profile ) printf("{$bldblu}URL:{$bldylw}$url {$bldblu}µT:{$bldylw}".( $mend - $mstart ).$txtrst."\n");
