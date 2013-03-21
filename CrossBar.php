@@ -57,7 +57,7 @@ class CrossBar {
 		$this->force_no_decode = false; 
 		$this->debug = false;	
 		$this->is_authenticated = false;	
-
+		$this->socket_stream = null;
 		
 
 		$login_type = "";
@@ -90,6 +90,11 @@ class CrossBar {
 			}
 		} 
 
+	}
+
+
+	function __destruct() {
+		if( $this->socket_stream != null ) fclose($this->socket_stream); 
 	}
 
 
@@ -1097,9 +1102,12 @@ class CrossBar {
 
 
 		$mstart = microtime(true);
-		$s = fsockopen($this->host, $this->port, $errno, $errstr);
+		if( $this->socket_stream == null ) {
+			$this->socket_stream = fsockopen($this->host, $this->port, $errno, $errstr);
+		}
 		//$this->log(" fsockopen Errno: $errno Str:$errstr");	
-		if(!$s) {
+		if( !$this->socket_stream ) {
+			$this->socket_stream = null;
 			$this->fsock_errno = $errno;
 			$this->fsock_errstr = $errstr;
 			return false; //if the connection fails return false
@@ -1123,12 +1131,16 @@ class CrossBar {
 		}
 
 
-		fwrite($s, $request);
+		fwrite($this->socket_stream, $request);
+
+
+
 		$response = "";
 
-		while(!feof($s)) { $response .= fgets($s); }
+		while(!feof($this->socket_stream) && $this->socket_stream != null ) { $response .= fgets($this->socket_stream); }
 
-		fclose($s); //Egg meet face :S
+		fclose($this->socket_stream);
+		$this->socket_stream = null;
 
 		$mend = microtime(true);
 
