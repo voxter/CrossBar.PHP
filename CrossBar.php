@@ -288,6 +288,35 @@ class CrossBar {
 
 	}
 
+
+
+	function get_object_x( $types, $filters = array(), $account_id = null ) {
+
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$filter = '';
+
+		if( count($types) ) foreach( $types as $t => $id ) $filter .= "$t/$id/";
+
+		if( count($filters) ) {
+			foreach( $filters as $key => $val ) $filter .= "filter_$key=$val&";
+			if( strlen($filter) ) $filter = '?'.substr($filter,0,-1);
+		} 
+
+		//$this->log("GET /v1/accounts/{$account_id}/$type$filter");
+		$response = $this->send_object("GET","/v1/accounts/{$account_id}/$filter");
+
+		//return($response['data']);
+		return($response->data);
+
+
+
+	}
+
+
+
+
+
+
 	function get_object( $type, $id = null, $filters = array(), $account_id = null ) {
 
 		if( $account_id == null ) $account_id = $this->use_account_id;
