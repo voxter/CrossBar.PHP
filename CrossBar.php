@@ -343,7 +343,7 @@ class CrossBar {
 
 
 	function get( $type, $id = null, $filters = array(), $account_id = null ) {
-		$this->log(__CLASS__."->".__METHOD__." is DEPRECATED, please replace with ".__CLASS__."->get_object");
+		//$this->log(__CLASS__."->".__METHOD__." is DEPRECATED, please replace with ".__CLASS__."->get_object");
 
 		if( $account_id == null ) $account_id = $this->use_account_id;
 
