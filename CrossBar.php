@@ -108,7 +108,7 @@ class CrossBar {
 		if( $this->debug ) {
 			echo $logthis."\n";
 		} else {
-			file_put_contents($this->logfile,date("Y-m-d H:i:s")." - ".$logthis."\n",FILE_APPEND);
+			file_put_contents($this->logfile,date("Y-m-d H:i:s")." - {$_SERVER['REMOTE_ADDR']} - ".$logthis."\n",FILE_APPEND);
 			//syslog(LOG_NOTICE,"CrossBar.PHP: ".$logthis);
 		}
 	}
@@ -226,7 +226,6 @@ class CrossBar {
 
 		$check_response = $this->send("GET","/v1/accounts/{$realm_id}/phone_numbers/");
 		foreach( $check_response['data'] as $number => $data ) {
-
 			if( $number == $did ) {
 				$account_id = $realm_id;
 				return($realm_id);
