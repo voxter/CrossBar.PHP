@@ -1283,8 +1283,9 @@ class CrossBar {
 
 		//if( $this->profile ) printf("{$bldblu}URL:{$bldylw}$url {$bldblu}µT:{$bldylw}".( $mend - $mstart ).$txtrst."\n");
 		$this->log( "{$bldred}{$method} {$this->host}:{$this->port}$url{$txtrst} {$bldylw}µT:".( $mend - $mstart )."{$txtrst}");
+		//$this->log( print_r($response,true) );
 
-		list($this->headers, $this->body) = explode("\r\n\r\n", $response);
+		list($this->headers, $this->body) = explode("\r\n\r\n", $response,2);
 
 		$REQUEST_ID = '';
 
@@ -1306,6 +1307,8 @@ class CrossBar {
 			}
 
 		}
+
+
 
 
 		//quick lazy check 
