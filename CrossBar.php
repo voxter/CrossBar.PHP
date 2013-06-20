@@ -556,14 +556,16 @@ class CrossBar {
 	}
 
 
-	function get_siblings() { 
-		$response = $this->send("GET","/v1/accounts/{$this->use_account_id}/siblings");
+	function get_siblings( $account_id = null ) { 
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/{$account_id}/siblings");
 		return($response['data']);
 	}
 
 
-	function get_descendants() { 
-		$response = $this->send("GET","/v1/accounts/{$this->use_account_id}/descendants");
+	function get_descendants( $account_id = null ) { 
+		if( $account_id == null ) $account_id = $this->use_account_id;
+		$response = $this->send("GET","/v1/accounts/{$account_id}/descendants");
 		return($response['data']);
 	}
 	
