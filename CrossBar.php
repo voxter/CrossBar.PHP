@@ -108,8 +108,8 @@ class CrossBar {
 		if( $this->debug ) {
 			echo $logthis."\n";
 		} else {
+			syslog(LOG_INFO,"CrossBar: ".$_SERVER['REMOTE_ADDR']." - ".$logthis);
 			file_put_contents($this->logfile,date("Y-m-d H:i:s")." - {$_SERVER['REMOTE_ADDR']} - ".$logthis."\n",FILE_APPEND);
-			//syslog(LOG_NOTICE,"CrossBar.PHP: ".$logthis);
 		}
 	}
 
@@ -146,6 +146,14 @@ class CrossBar {
 		$response = $this->send("GET","/v1/accounts/{$account_id}/connectivity/$cid");
 		return($response);
 	}
+
+
+        function get_credits( $account_id = null ) {
+                if ( $account_id == null ) $account_id = $this->use_account_id;
+                $response = $this->send("GET","/v1/accounts/{$account_id}/braintree/credits");
+                return($response);
+        }
+
 
 
 	function get_pbxs( $account_id = null ) { 
@@ -1234,7 +1242,18 @@ class CrossBar {
 	
 	function send( $method, $url, $post_data = NULL, $type = 'application/json', $accept_type = "application/json, application/octet-stream, audio/*, */*" ) {
 
-		$bldred=chr(0x1B).'[1;31m'; $bldgrn=chr(0x1B).'[1;32m'; $bldylw=chr(0x1B).'[1;33m'; $bldblu=chr(0x1B).'[1;34m'; $bldpur=chr(0x1B).'[1;35m'; $bldcyn=chr(0x1B).'[1;36m'; $bldwht=chr(0x1B).'[1;37m'; $txtrst=chr(0x1B).'[0m'; 
+		$bldred=''; 
+		$bldgrn=''; 
+		$bldylw='';
+		$bldblu='';
+		$bldpur='';
+		$bldcyn='';
+		$bldwht='';
+		$txtrst='';
+
+		if( $this->color == true ) {
+			$bldred=chr(0x1B).'[1;31m'; $bldgrn=chr(0x1B).'[1;32m'; $bldylw=chr(0x1B).'[1;33m'; $bldblu=chr(0x1B).'[1;34m'; $bldpur=chr(0x1B).'[1;35m'; $bldcyn=chr(0x1B).'[1;36m'; $bldwht=chr(0x1B).'[1;37m'; $txtrst=chr(0x1B).'[0m'; 
+		}
 
 
 		$mstart = microtime(true);
