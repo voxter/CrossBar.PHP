@@ -925,7 +925,7 @@ class CrossBar {
 
 	function post_user( $data, $user_id, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("POST","/v1/accounts/{$account_id}/users/$user_id", json_encode(array('data'=>$data),JSON_FORCE_OBJECT));
+		$response = $this->send("POST","/v1/accounts/{$account_id}/users/$user_id", json_encode(array('data'=>$data)));
 		return($response);
 	}
 
