@@ -126,13 +126,11 @@ class CrossBar {
 	@todo test this feature
 	**/
 	function get_version() {
-
 		$tmp = $this->force_no_decode;
 		$this->force_no_decode = true;
-		if( $account_id == null ) $account_id = $this->use_account_id;
-		$response = $this->send("GET","/v1/about" );
+		$response = $this->send("GET", "/v1/about");
 		$this->force_no_decode = $tmp;
-		return($response);
+		return $response;
 	}
 
 
