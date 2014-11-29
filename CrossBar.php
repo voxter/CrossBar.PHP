@@ -27,7 +27,7 @@ class CrossBar {
 
 	var $usermd5;	/**< usermd5 md5 of "user:password" */
 	var $host;	/**< ipv4 address or hostname */
-        var $logfile = "/var/log/xbar.log"; /**< Log file */
+    var $logfile; /**< Log file */
 	var $color = true;
 
 	/** 
@@ -59,7 +59,13 @@ class CrossBar {
 		$this->debug = false;	
 		$this->is_authenticated = false;	
 		$this->socket_stream = null;
-		$this->logfile;
+		
+		if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			$this->logfile = "c:/Program Files (x86)/Apache Software Foundation/Apache2.2/logs/xbar.log";
+		}
+		else {
+			$this->logfile = "/var/log/xbar.log";
+		}
 
 		$login_type = "";
 
@@ -70,7 +76,7 @@ class CrossBar {
 		if( !isset($this->xauth) && !isset($this->auth_account_id) ) {
 			if( isset($this->usermd5) ) {
 				$login_type = "md5";
-				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"realm": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
+				$auth = $this->send("PUT","/v1/user_auth",'{"data":{"account_name": "'.$this->realm.'", "credentials": "'.$this->usermd5.'" }}');
 			} else {
 				$login_type = "api_key";
 				$auth = $this->send("PUT","/v1/api_auth",'{"data":{"api_key": "'.$this->api_key.'" }}');
