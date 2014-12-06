@@ -724,7 +724,7 @@ class CrossBar {
 
 
 
-	function get_conference_map() {
+	/*function get_conference_map() {
 		$cf_nums = $this->get_callflows();
 		$map = array();
 		foreach( $cf_nums as $cf_num ) {
@@ -734,6 +734,8 @@ class CrossBar {
 			if( $cf['flow']['module'] == 'conference' ) {
 				foreach( $cf['numbers'] as $number ) {
 					if( isset( $cf['flow']['data']['id'] ) ) {
+						ctrace(__LINE__, __FILE__, $cf['flow']['data']['id']);
+						ctrace(__LINE__, __FILE__, $number);
 						$map['direct'][$cf['flow']['data']['id']][] = $number;
 						//$map[$cf['flow']['data']['id']]['direct'][] = $number;
 					} else {
@@ -749,7 +751,7 @@ class CrossBar {
 		return($map);
 
 
-	}
+	}*/
 
 
         function get_conferences( $account_id = null ) {
@@ -767,12 +769,11 @@ class CrossBar {
         }
 
 	
-        function get_conference( $conference_id = null, $account_id = null ) {
-                if( $account_id == null ) $account_id = $this->use_account_id;
-                $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
+    function get_conference( $conference_id = null, $account_id = null ) {
+        if( $account_id == null ) $account_id = $this->use_account_id;
+        $response = $this->send("GET","/v1/accounts/{$account_id}/conferences/{$conference_id}");
 		return($response['data']);
-        }
-
+    }
 
 	function put_conference( $data, $account_id = null ) { 
 		if( $account_id == null ) $account_id = $this->use_account_id;
