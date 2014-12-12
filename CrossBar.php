@@ -449,7 +449,31 @@ class CrossBar {
 		return($aout);
 
 	}
-
+	
+	/**
+	 * Get all callflows which have user object with the user's id
+	 * @param $userId		user id who the call flows should reference
+	 * @param $accountId	kazoo account id to search in
+	 */
+	function get_callflows_by_user($userId, $accountId = null) {
+		$cfs = $this->get_callflows($accountId);
+		
+		$userCfs = array();
+		foreach($cfs as $cf) {
+			// User ID required, and module must be user type
+			if(!isset($cf['flow']['data']['id']) || !isset($cf['flow']['module'])) {
+				continue;
+			}
+			
+			// If user matches, add them
+			if($cf['flow']['data']['id'] == $userId && $cf['flow']['module'] == 'user') {
+				$userCfs[] = $cf;
+			}
+		}
+		
+		ctrace(__LINE__, __FILE__, print_r($userCfs, true));
+		return $userCfs;
+	}
 
 	function get_device_by_username( $username, $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -802,6 +826,14 @@ class CrossBar {
 		$response = $this->send("GET", "/v1/accounts/{$accountId}/conferences/{$conferenceId}/details");
 		return $response['data'];
 	}
+	
+	public function conference_participant_action($action, $conferenceId, $participantId, $accountId = null) {
+		if($accountId == null) {
+			$accountId = $this->use_account_id;
+		}
+		$response = $this->send("GET", "/v1/accounts/{$accountId}/conferences/{$conferenceId}/{$action}/{$participantId}");
+		return $response['data'];
+	}
 
 
 
@@ -941,6 +973,13 @@ class CrossBar {
 		return($response);
 	}
 
+	function post_user_validate($data, $userId, $accountId = null) {
+		if($accountId == null) {
+			$accountId = $this->use_account_id;
+		}
+		$response = $this->sendValidate("POST", "/v1/accounts/{$accountId}/users/{$userId}", json_encode(array('data' => $data)));
+		return $response;
+	}
 
 	function get_account( $account_id = null ) {
 		if( $account_id == null ) $account_id = $this->use_account_id;
@@ -968,7 +1007,13 @@ class CrossBar {
 		return($response);
 	}
 
-
+	function post_account_validate($data, $accountId = null) {
+		if($accountId == null) {
+			$accountId = $this->use_account_id;
+		}
+		$response = $this->sendValidate("POST", "/v1/accounts/{$accountId}", json_encode(array('data' => $data)));
+		return $response;
+	}
 
 
 
@@ -1370,6 +1415,122 @@ class CrossBar {
 		return json_decode($this->body,true);
 		
 
+	}
+	
+	function sendValidate($method, $url, $post_data = NULL, $type = 'application/json', $accept_type = "application/json, application/octet-stream, audio/*, */*") {
+		$bldred=''; 
+		$bldgrn=''; 
+		$bldylw='';
+		$bldblu='';
+		$bldpur='';
+		$bldcyn='';
+		$bldwht='';
+		$txtrst='';
+
+		if($this->color == true) {
+			$bldred=chr(0x1B).'[1;31m';
+			$bldgrn=chr(0x1B).'[1;32m';
+			$bldylw=chr(0x1B).'[1;33m';
+			$bldblu=chr(0x1B).'[1;34m';
+			$bldpur=chr(0x1B).'[1;35m';
+			$bldcyn=chr(0x1B).'[1;36m';
+			$bldwht=chr(0x1B).'[1;37m';
+			$txtrst=chr(0x1B).'[0m'; 
+		}
+
+		// Establish stream to endpoint
+		$mstart = microtime(true);
+		if($this->socket_stream == null) {
+			$this->socket_stream = fsockopen($this->host, $this->port, $errno, $errstr);
+		}
+		
+		// If stream connection failed, return
+		if(!$this->socket_stream) {
+			$this->socket_stream = null;
+			$this->fsock_errno = $errno;
+			$this->fsock_errstr = $errstr;
+			return false; //if the connection fails return false
+		}
+
+		// Connection headers
+		$request = "$method $url HTTP/1.0\r\nHost: $this->host\r\n";
+		if(isset($this->user)) {
+			$request .= "Authorization: Basic ".base64_encode("$this->user:$this->pass")."\r\n";
+		}
+		if($type != null) {
+			$request .= "Content-Type: $type\r\n";
+		}
+		$request .= "Accept: $accept_type\r\n";
+		if(isset($this->xauth)) {
+			$request .= "X-Auth-Token: {$this->xauth}\r\n";
+		}
+
+		// Add post data to request
+		if($post_data) {
+			$request .= "Content-Length: ".strlen($post_data)."\r\n\r\n";
+			$request .= "$post_data\r\n";
+		}
+		else {
+			$request .= "\r\n";
+		}
+
+		// Write request to server
+		fwrite($this->socket_stream, $request);
+		
+		// Get response from server
+		$response = "";
+		while(!feof($this->socket_stream) && $this->socket_stream != null) {
+			$response .= fgets($this->socket_stream);
+		}
+		fclose($this->socket_stream);
+		$this->socket_stream = null;
+
+		// Log connection finished
+		$mend = microtime(true);
+		$this->log("{$bldred}{$method} {$this->host}:{$this->port}$url{$txtrst} {$bldylw}µT:".($mend - $mstart)."{$txtrst}");
+
+		list($this->headers, $this->body) = explode("\r\n\r\n", $response, 2);
+
+		$REQUEST_ID = '';
+		if(strlen($this->headers)) {
+			$hexp = explode("\n",$this->headers);
+			foreach($hexp as $line) {
+				if(strstr($line,"X-Request-ID")) {
+					$reqxp = explode(":",$line);
+					$REQUEST_ID = $reqxp[1];
+				}
+			}
+		}
+
+		// DELETE ends with 204 for success
+		if($method == "DELETE") {
+			if(stristr($this->headers,"204 No Content")) {
+				return array('status' => 'success');
+			}
+		}
+
+		// If errors occurred, log them
+		if(!stristr($this->headers, "200 OK") && !stristr($this->headers, "201 Created") ||
+			stristr($this->headers, "401 Unauthorized") || stristr($this->headers, "400 Not Found") ||
+			stristr($this->headers, "500 Internal Server") || stristr($this->headers,"400 Bad Request")) { 
+			$this->log("{$bldpur}>>>>: $method $url HTTP/1.0 ($type) len:".strlen($post_data)."$txtrst \n");
+			if($post_data && $type == 'application/json') {
+				$this->log("{$bldpur}>>>>: ".trim($post_data)."\n");
+			}
+			$this->log("{$bldylw}<<<<: ".trim($hexp[0])." µT=".($mend - $mstart)." request_id:$REQUEST_ID{$txtrst}\n");
+			$this->log("{$bldylw}<<<<: ".$this->headers."{$txtrst}");
+			$this->log("{$bldylw}<<<<: ".$this->body."{$txtrst}");
+			
+			$temp = json_decode($this->body, true);
+			
+			return array('status' => 'failure', 'errors' => $temp['data'], 'message' => $temp['message']);
+		}
+
+		// Return the data from server
+		if($this->force_no_decode) {
+			return $this->body;
+		} 
+		return json_decode($this->body, true);
 	}
 
 
