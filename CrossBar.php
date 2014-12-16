@@ -460,18 +460,17 @@ class CrossBar {
 		
 		$userCfs = array();
 		foreach($cfs as $cf) {
-			// User ID required, and module must be user type
-			if(!isset($cf['flow']['data']['id']) || !isset($cf['flow']['module'])) {
+			// User ID required
+			if(!isset($cf['user_id'])) {
 				continue;
 			}
 			
 			// If user matches, add them
-			if($cf['flow']['data']['id'] == $userId && $cf['flow']['module'] == 'user') {
+			if($cf['user_id'] == $userId) {
 				$userCfs[] = $cf;
 			}
 		}
 		
-		ctrace(__LINE__, __FILE__, print_r($userCfs, true));
 		return $userCfs;
 	}
 
