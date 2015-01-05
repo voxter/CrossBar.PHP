@@ -1405,7 +1405,7 @@ class CrossBar {
 				$temp =  json_decode($this->body,true);
 				
 				//return( array("data" => array('status' => 'failure', 'message' => $temp['message'])) );
-				return( array('status' => 'failure', 'message' => $temp['message']) );
+				return( array('status' => 'failure', 'error' => $temp['error'], 'errors' => $temp['data'], 'message' => $temp['message']) );
 				//return false;
 		}
 
@@ -1522,7 +1522,7 @@ class CrossBar {
 			
 			$temp = json_decode($this->body, true);
 			
-			return array('status' => 'failure', 'errors' => $temp['data'], 'message' => $temp['message']);
+			return array('status' => 'failure', 'error' => $temp['error'], 'errors' => $temp['data'], 'message' => $temp['message']);
 		}
 
 		// Return the data from server
