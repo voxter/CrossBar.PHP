@@ -868,13 +868,13 @@ class CrossBar {
 	    if($mediaId == null) {
 	        return $this->get(array(
                 'Account' => array('id' => $accountId),
-                'Media' => array()
+                'Medias' => array()
             ));
 	    }
 	    else {
             return $this->get(array(
                 'Account' => array('id' => $accountId),
-                'MediaItem' => array('id' => $mediaId)
+                'Media' => array('id' => $mediaId)
             ));
 		}
 	}
@@ -882,7 +882,7 @@ class CrossBar {
 	function get_media_by_name($name, $accountId = null) {
 		$response = $this->get(array(
 			'Account' => array('id' => $accountId),
-			'Media' => array('filters' => array('name' => $name))
+			'Medias' => array('filters' => array('name' => $name))
 		));
 		return $response[0];
 	}
@@ -890,23 +890,23 @@ class CrossBar {
 	function get_media_raw($mediaId = null, $accountId = null) {
 	    return $this->get(array(
 	        'Account' => array('id' => $accountId),
-	        'MediaItem' => array('id' => $mediaId),
-	        'raw' => array()
+	        'Media' => array('id' => $mediaId),
+	        'getRaw' => array()
 	    ));
 	}
 
 	function put_media($data, $accountId = null) {
 		$response = $this->put(array(
 			'Account' => array('id' => $accountId),
-			'MediaItem' => array()
+			'Media' => array()
 		), $data['data']);
 		
 		if($response['status'] == 'success' && isset($response['data']['id']) &&
 		    isset($data['raw'])) {
 		    return $this->post(array(
 		        'Account' => array('id' => $accountId),
-		        'MediaItem' => array('id' => $response['data']['id']),
-		        'upload' => array('args' => array(
+		        'Media' => array('id' => $response['data']['id']),
+		        'postRaw' => array('args' => array(
 		            'raw' => $data['raw'],
 		            'type' => $data['type']
 		        ))
@@ -920,14 +920,14 @@ class CrossBar {
 	function post_media($data, $mediaId, $accountId = null) {
 		$response = $this->post(array(
 			'Account' => array('id' => $accountId),
-			'MediaItem' => array('id' => $mediaId)
+			'Media' => array('id' => $mediaId)
 		), $data['data']);
 		
 		if($response['status'] == 'success' && isset($data['raw'])) {
 		    return $this->post(array(
 		        'Account' => array('id' => $accountId),
-		        'MediaItem' => array('id' => $response['data']['id']),
-		        'upload' => array('args' => array(
+		        'Media' => array('id' => $response['data']['id']),
+		        'postRaw' => array('args' => array(
 		            'raw' => $data['raw'],
 		            'type' => $data['type']
 		        ))
@@ -941,7 +941,7 @@ class CrossBar {
 	function del_media($mediaId, $accountId = null) {
 		return $this->del(array(
 			'Account' => array('id' => $accountId),
-			'MediaItem' => array('id' => $mediaId)
+			'Media' => array('id' => $mediaId)
 		));
 	}
 
